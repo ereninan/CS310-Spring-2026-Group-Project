@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'utils.dart';
+import '../../utils.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   // Dışarıdan gelecek değişkenler

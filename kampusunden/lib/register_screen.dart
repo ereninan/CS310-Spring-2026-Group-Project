@@ -53,7 +53,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   child: ElevatedButton(
                     onPressed: () {
                       if (key2.currentState!.validate()) {
-                        Navigator.pushNamed(context, '/');
+                        
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false, 
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              title: const Text("Registration Successful"),
+                              content: const Text("Your account has been created. You can now sign in!"),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.of(context).pop();
+                                    Navigator.pushNamed(context, '/');
+                                  },
+                                  child: const Text("OK"),
+                                ),
+                              ],
+                            );
+                          },
+                        );
                       }
                     },
                     style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[400]),

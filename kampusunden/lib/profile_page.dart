@@ -35,10 +35,12 @@ class _ProfileAppState extends State<ProfileApp> {
                   borderRadius: BorderRadius.circular(60),
                   border: Border.all(color: Colors.blueAccent, width: 3),
                 ),
-                child: const Center(
-                  child: Text(
-                    '🧑‍🎓',
-                    style: TextStyle(fontSize: 60),
+                child: Center(
+                  child: Image.asset(
+                    'lib/data/images/profileImg.png', 
+                    width: 80,                
+                    height: 80,                
+                    fit: BoxFit.contain,       
                   ),
                 ),
               ),

@@ -45,7 +45,26 @@ class _SignInScreenState extends State<SignInScreen> {
                   child: ElevatedButton(
                     onPressed: () {
                       if (key1.currentState!.validate()) {
-                        Navigator.pushReplacementNamed(context, '/homepage');
+                        // Başarılı girişte AlertDialog gösteriyoruz
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false, // Kullanıcı OK demeden kapanmasın
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              title: const Text("Success"),
+                              content: const Text("You have successfully signed in to Kampüsünden!"),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.of(context).pop(); // Dialogu kapat
+                                    Navigator.pushReplacementNamed(context, '/homepage'); // Ana sayfaya yönlendir
+                                  },
+                                  child: const Text("OK"),
+                                ),
+                              ],
+                            );
+                          },
+                        );
                       }
                     },
                     style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[400]),
