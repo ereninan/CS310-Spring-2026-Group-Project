@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
 import 'utils.dart';
 
 class SignInScreen extends StatefulWidget {
@@ -10,9 +12,20 @@ class SignInScreen extends StatefulWidget {
 
 class _SignInScreenState extends State<SignInScreen> {
   final key1 = GlobalKey<FormState>();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    
     return Scaffold(
       backgroundColor: Colors.white,
       
@@ -29,11 +42,13 @@ class _SignInScreenState extends State<SignInScreen> {
                 Text('Sign In', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                 SizedBox(height: 30),
                 TextFormField(
+                  controller: _emailController,
                   decoration: InputDecoration(hintText: 'email@domain.com', border: OutlineInputBorder()),
                   validator: (val) => (val == null || !val.contains('@')) ? 'Invalid email' : null,
                 ),
                 SizedBox(height: 16),
                 TextFormField(
+                  controller: _passwordController,
                   decoration: InputDecoration(hintText: 'Password', border: OutlineInputBorder()),
                   obscureText: true,
                   validator: (val) => (val == null || val.isEmpty) ? 'Required' : null,
@@ -43,32 +58,40 @@ class _SignInScreenState extends State<SignInScreen> {
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton(
-                    onPressed: () {
+                    onPressed: authProvider.isLoading ? null : () async {
                       if (key1.currentState!.validate()) {
-                        // Başarılı girişte AlertDialog gösteriyoruz
-                        showDialog(
-                          context: context,
-                          barrierDismissible: false, // Kullanıcı OK demeden kapanmasın
-                          builder: (BuildContext context) {
-                            return AlertDialog(
-                              title: const Text("Success"),
-                              content: const Text("You have successfully signed in to Kampüsünden!"),
-                              actions: [
-                                TextButton(
-                                  onPressed: () {
-                                    Navigator.of(context).pop(); // Dialogu kapat
-                                    Navigator.pushReplacementNamed(context, '/homepage'); // Ana sayfaya yönlendir
-                                  },
-                                  child: const Text("OK"),
-                                ),
-                              ],
-                            );
-                          },
-                        );
+                        try {
+                          await authProvider.signIn(_emailController.text.trim(), _passwordController.text.trim());
+                          if (!mounted) return;
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false, 
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                title: const Text("Success"),
+                                content: const Text("You have successfully signed in to Kampüsünden!"),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.of(context).pop(); 
+                                      Navigator.pushReplacementNamed(context, '/homepage'); 
+                                    },
+                                    child: const Text("OK"),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                        } catch (e) {
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+                          );
+                        }
                       }
                     },
                     style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[400]),
-                    child: Text('Continue', style: TextStyle(color: Colors.white)),
+                    child: authProvider.isLoading ? CircularProgressIndicator(color: Colors.white) : Text('Continue', style: TextStyle(color: Colors.white)),
                   ),
                 ),
                 SizedBox(height: 10),
