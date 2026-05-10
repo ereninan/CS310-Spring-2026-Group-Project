@@ -44,12 +44,14 @@ class activeListingCard extends StatelessWidget {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  imageUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) =>
-                  const Center(child: Text('📦')),
-                ),
+                child: (imageUrl.isEmpty || imageUrl == 'https://via.placeholder.com/150')
+                    ? const Center(child: Icon(Icons.image_not_supported, color: Colors.grey))
+                    : Image.network(
+                        imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                        const Center(child: Icon(Icons.broken_image, color: Colors.grey)),
+                      ),
               ),
             ),
             const SizedBox(width: 10),

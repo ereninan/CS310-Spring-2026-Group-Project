@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:kampusunden/utils.dart';
-import 'package:kampusunden/data/my_listings.dart';
+import 'package:provider/provider.dart';
+import '../providers/listing_provider.dart';
+import '../providers/auth_provider.dart';
+
 class acticeListDetail extends StatefulWidget {
   final String title;
   final String price;
   final String imageUrl;
   final int index;
+  final String id; 
+  final String createdBy;
 
   const acticeListDetail({
     super.key,
@@ -13,6 +18,8 @@ class acticeListDetail extends StatefulWidget {
     required this.price,
     required this.imageUrl,
     required this.index,
+    this.id = '',
+    this.createdBy = '',
   });
 
   @override
@@ -22,26 +29,31 @@ class acticeListDetail extends StatefulWidget {
 class _acticeListDetailState extends State<acticeListDetail> {
   @override
   Widget build(BuildContext context) {
+    final currentUserId = Provider.of<AuthProvider>(context, listen: false).user?.uid;
+    final isOwner = currentUserId != null && currentUserId == widget.createdBy;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-
         title: Text(widget.title, style: const TextStyle(color: Colors.black)),
         centerTitle: true,
         backgroundColor: Colors.white,
         iconTheme: const IconThemeData(color: Colors.black),
         elevation: 0,
         actions: [
-          IconButton(onPressed: (){
-            setState(() {
-
-              dummyAds.removeAt(widget.index);
-            });
-            Navigator.pop(context);
-            setState(() {
-
-            });
-          }, icon: Icon(Icons.delete))
+          if (isOwner && widget.id.isNotEmpty)
+            IconButton(
+              onPressed: () async {
+                try {
+                  await Provider.of<ListingProvider>(context, listen: false).deleteListing(widget.id);
+                  if (!mounted) return;
+                  Navigator.pop(context);
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to delete: $e')));
+                }
+              }, 
+              icon: const Icon(Icons.delete)
+            )
         ],
       ),
       body: SingleChildScrollView(
@@ -50,25 +62,29 @@ class _acticeListDetailState extends State<acticeListDetail> {
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Image.network(
-                widget.imageUrl,
-                height: 250,
-                width: double.infinity,
-                fit: BoxFit.contain,
-              ),
+              child: (widget.imageUrl.isEmpty || widget.imageUrl == 'https://via.placeholder.com/150')
+                  ? Container(
+                      height: 250,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Icon(Icons.image_not_supported, size: 80, color: Colors.grey),
+                    )
+                  : Image.network(
+                      widget.imageUrl,
+                      height: 250,
+                      width: double.infinity,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        height: 250,
+                        color: Colors.grey[200],
+                        child: const Center(child: Icon(Icons.broken_image, size: 50, color: Colors.grey)),
+                      ),
+                    ),
             ),
             const SizedBox(height: 16),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Column(
@@ -88,27 +104,27 @@ class _acticeListDetailState extends State<acticeListDetail> {
           ],
         ),
       ),
-
       bottomNavigationBar: _buildBottomMessageBar(),
     );
   }
-}
-Widget _buildBottomMessageBar() {
-  return Padding(
-    padding: EdgeInsets.all(AppUtils.pad),
-    child: SizedBox(
-      width: double.infinity,
-      height: 50,
-      child: ElevatedButton(
-        onPressed: () {
 
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppUtils.appBlue,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+  Widget _buildBottomMessageBar() {
+    return Padding(
+      padding: EdgeInsets.all(AppUtils.pad),
+      child: SizedBox(
+        width: double.infinity,
+        height: 50,
+        child: ElevatedButton(
+          onPressed: () {
+
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppUtils.appBlue,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          child: const Text('Message', style: TextStyle(color: Colors.white, fontSize: 16)),
         ),
-        child: const Text('Message', style: TextStyle(color: Colors.white, fontSize: 16)),
       ),
-    ),
-  );
+    );
+  }
 }

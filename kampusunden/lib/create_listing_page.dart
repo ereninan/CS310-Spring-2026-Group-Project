@@ -1,7 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:kampusunden/utils.dart';
-
-
+import '../providers/listing_provider.dart';
+import '../providers/auth_provider.dart';
+import '../models/listing_model.dart';
 
 class CreateListingApp extends StatefulWidget {
   const CreateListingApp({super.key});
@@ -11,6 +16,47 @@ class CreateListingApp extends StatefulWidget {
 }
 
 class _CreateListingAppState extends State<CreateListingApp> {
+  final TextEditingController _brandController = TextEditingController();
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _priceController = TextEditingController();
+  
+  File? _selectedImage;
+  bool _isUploading = false;
+  String _selectedCategory = 'Electronics';
+  final ImagePicker _picker = ImagePicker();
+
+  @override
+  void dispose() {
+    _brandController.dispose();
+    _titleController.dispose();
+    _priceController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
+    if (image != null) {
+      setState(() {
+        _selectedImage = File(image.path);
+      });
+    }
+  }
+
+  Future<String> _uploadImage(File imageFile) async {
+    try {
+      final String fileName = DateTime.now().millisecondsSinceEpoch.toString();
+      final Reference ref = FirebaseStorage.instance.ref().child('listing_images').child('$fileName.jpg');
+      
+      final UploadTask uploadTask = ref.putFile(imageFile);
+      final TaskSnapshot snapshot = await uploadTask;
+      
+      final String downloadUrl = await snapshot.ref.getDownloadURL();
+      return downloadUrl;
+    } catch (e) {
+      throw Exception('Failed to upload image: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -70,39 +116,26 @@ class _CreateListingAppState extends State<CreateListingApp> {
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 children: [
-                  Container(
-                    width: 80,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(16),
+                  GestureDetector(
+                    onTap: _pickImage,
+                    child: Container(
+                      width: 100,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(16),
+                        image: _selectedImage != null 
+                            ? DecorationImage(image: FileImage(_selectedImage!), fit: BoxFit.cover)
+                            : null,
+                      ),
+                      child: _selectedImage == null ? const Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.add_a_photo, size: 28, color: Colors.grey),
+                          SizedBox(height: 4),
+                          Text('Add Image', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                        ],
+                      ) : null,
                     ),
-                    child: const Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text('📷', style: TextStyle(fontSize: 24)),
-                        Text('Add Image', style: TextStyle(fontSize: 10)),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Container(
-                    width: 80,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.grey.shade200),
-                    ),
-                    child: const Center(child: Text('🖼️', style: TextStyle(fontSize: 30))),
-                  ),
-                  const SizedBox(width: 12),
-                  Container(
-                    width: 80,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.grey.shade200),
-                    ),
-                    child: const Center(child: Text('🖼️', style: TextStyle(fontSize: 30))),
                   ),
                 ],
               ),
@@ -119,31 +152,40 @@ class _CreateListingAppState extends State<CreateListingApp> {
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey.shade300),
-                      borderRadius: BorderRadius.circular(8),
+                  GestureDetector(
+                    onTap: () => setState(() => _selectedCategory = 'Books'),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: _selectedCategory == 'Books' ? AppUtils.appBlue : Colors.grey.shade300, width: _selectedCategory == 'Books' ? 2 : 1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(children: [const Text('📚'), const SizedBox(width: 4), Text('Books', style: AppUtils.product_card_title,)]),
                     ),
-                    child: Row(children: [const Text('📚'), const SizedBox(width: 4), Text('Books', style: AppUtils.product_card_title,)]),
                   ),
                   const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: AppUtils.appBlue, width: 2),
-                      borderRadius: BorderRadius.circular(8),
+                  GestureDetector(
+                    onTap: () => setState(() => _selectedCategory = 'Electronics'),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: _selectedCategory == 'Electronics' ? AppUtils.appBlue : Colors.grey.shade300, width: _selectedCategory == 'Electronics' ? 2 : 1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(children: [const Text('💻'), const SizedBox(width: 4), Text('Electronics', style: AppUtils.product_card_title)]),
                     ),
-                    child: Row(children: [const Text('💻'), const SizedBox(width: 4), Text('Electronics', style: AppUtils.product_card_title)]),
                   ),
                   const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey.shade300),
-                      borderRadius: BorderRadius.circular(8),
+                  GestureDetector(
+                    onTap: () => setState(() => _selectedCategory = 'Furniture'),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: _selectedCategory == 'Furniture' ? AppUtils.appBlue : Colors.grey.shade300, width: _selectedCategory == 'Furniture' ? 2 : 1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(children: [const Text('🪑'), const SizedBox(width: 4), Text('Furniture', style: AppUtils.product_card_title)]),
                     ),
-                    child: Row(children: [const Text('🪑'), const SizedBox(width: 4), Text('Furniture', style: AppUtils.product_card_title)]),
                   ),
                 ],
               ),
@@ -151,17 +193,17 @@ class _CreateListingAppState extends State<CreateListingApp> {
             const SizedBox(height: 24),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: const Column(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Brand:', style: AppUtils.headerStyle),
-                  TextField(decoration: InputDecoration(hintText: 'Enter brand name')),
-                  SizedBox(height: 16),
-                  Text('Title:', style: AppUtils.headerStyle),
-                  TextField(decoration: InputDecoration(hintText: 'Enter product title')),
-                  SizedBox(height: 16),
-                  Text('Price:', style: AppUtils.headerStyle),
-                  TextField(decoration: InputDecoration(hintText: 'Enter price ₺')),
+                  const Text('Brand:', style: AppUtils.headerStyle),
+                  TextField(controller: _brandController, decoration: const InputDecoration(hintText: 'Enter brand name')),
+                  const SizedBox(height: 16),
+                  const Text('Title:', style: AppUtils.headerStyle),
+                  TextField(controller: _titleController, decoration: const InputDecoration(hintText: 'Enter product title')),
+                  const SizedBox(height: 16),
+                  const Text('Price:', style: AppUtils.headerStyle),
+                  TextField(controller: _priceController, decoration: const InputDecoration(hintText: 'Enter price ₺')),
                 ],
               ),
             ),
@@ -170,25 +212,81 @@ class _CreateListingAppState extends State<CreateListingApp> {
         ),
         bottomNavigationBar: Container(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
-          child: Container(
-            height: 60,
-            decoration: BoxDecoration(
-              color: AppUtils.appBlue,
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: const Center(
-              child: Text(
-                'Go Live',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
+          child: GestureDetector(
+            onTap: _isUploading ? null : () async {
+              if (_titleController.text.isEmpty || _priceController.text.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter title and price')));
+                return;
+              }
+              final authProvider = Provider.of<AuthProvider>(context, listen: false);
+              final user = authProvider.user;
+              if (user == null) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Not logged in')));
+                return;
+              }
+              
+              setState(() {
+                _isUploading = true;
+              });
+
+              try {
+                String uploadedImageUrl = "https://via.placeholder.com/150"; // default fallback
+                if (_selectedImage != null) {
+                  uploadedImageUrl = await _uploadImage(_selectedImage!);
+                }
+
+                final newListing = ListingModel(
+                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                  title: _titleController.text.trim(),
+                  price: _priceController.text.trim(),
+                  imageUrl: uploadedImageUrl,
+                  category: _selectedCategory,
+                  brand: _brandController.text.trim(),
+                  createdBy: user.uid,
+                  createdAt: DateTime.now(),
+                );
+                
+                await Provider.of<ListingProvider>(context, listen: false).addListing(newListing);
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Listing added successfully')));
+                _titleController.clear();
+                _priceController.clear();
+                _brandController.clear();
+                setState(() {
+                  _selectedImage = null;
+                });
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+              } finally {
+                if (mounted) {
+                  setState(() {
+                    _isUploading = false;
+                  });
+                }
+              }
+            },
+            child: Container(
+              height: 60,
+              decoration: BoxDecoration(
+                color: _isUploading ? Colors.grey : AppUtils.appBlue,
+                borderRadius: BorderRadius.circular(30),
+              ),
+              child: Center(
+                child: _isUploading 
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text(
+                      'Go Live',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
               ),
             ),
           ),
         ),
       );
-    
   }
 }

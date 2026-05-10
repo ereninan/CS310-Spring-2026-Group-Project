@@ -5,13 +5,14 @@ class ProductCard extends StatelessWidget {
   final String title;
   final String price;
   final String imageUrl;
+  final String sellerId;
 
   const ProductCard({
     super.key,
     required this.title,
     required this.price,
     required this.imageUrl,
-
+    this.sellerId = '',
   });
 
   @override
@@ -20,7 +21,7 @@ class ProductCard extends StatelessWidget {
       onTap: (){Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => ProductDetailScreen(title: title, price: price, imageUrl: imageUrl),
+          builder: (context) => ProductDetailScreen(title: title, price: price, imageUrl: imageUrl, sellerId: sellerId),
         ),
       );},
       child: Container(
@@ -31,11 +32,29 @@ class ProductCard extends StatelessWidget {
           children: [
             Padding(
               padding: const EdgeInsets.all(3.0),
-              child: Image.network(
-                imageUrl,
-                width: 150,
-                height: 150,
-                fit: BoxFit.cover,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8.0),
+                child: (imageUrl.isEmpty || imageUrl == "https://via.placeholder.com/150")
+                    ? Container(
+                        width: 150,
+                        height: 150,
+                        color: Colors.grey.shade200,
+                        child: const Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
+                      )
+                    : Image.network(
+                        imageUrl,
+                        width: 150,
+                        height: 150,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            width: 150,
+                            height: 150,
+                            color: Colors.grey.shade200,
+                            child: const Icon(Icons.broken_image, size: 50, color: Colors.grey),
+                          );
+                        },
+                      ),
               ),
             ),
             const SizedBox(height: 10),

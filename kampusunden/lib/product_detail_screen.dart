@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import '../../utils.dart';
+import 'message_page.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   // Dışarıdan gelecek değişkenler
   final String title;
   final String price;
   final String imageUrl;
+  final String sellerId;
 
   const ProductDetailScreen({
     super.key,
     required this.title,
     required this.price,
     required this.imageUrl,
+    this.sellerId = '',
   });
 
   @override
@@ -38,12 +41,33 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Image.network(
-                widget.imageUrl,
-                height: 250,
-                width: double.infinity,
-                fit: BoxFit.contain,
-              ),
+              child: (widget.imageUrl.isEmpty || widget.imageUrl == "https://via.placeholder.com/150")
+                  ? Container(
+                      height: 250,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Icon(Icons.image_not_supported, size: 80, color: Colors.grey),
+                    )
+                  : Image.network(
+                      widget.imageUrl,
+                      height: 250,
+                      width: double.infinity,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          height: 250,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Icon(Icons.broken_image, size: 80, color: Colors.grey),
+                        );
+                      },
+                    ),
             ),
             const SizedBox(height: 16),
 
@@ -77,11 +101,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ),
       ),
 
-      bottomNavigationBar: _buildBottomMessageBar(),
+      bottomNavigationBar: _buildBottomMessageBar(context, widget.sellerId),
     );
   }
 }
-Widget _buildBottomMessageBar() { 
+Widget _buildBottomMessageBar(BuildContext context, String sellerId) { 
   return Padding(
     padding: EdgeInsets.all(AppUtils.pad),
     child: SizedBox(
@@ -89,7 +113,16 @@ Widget _buildBottomMessageBar() {
       height: 50,
       child: ElevatedButton(
         onPressed: () {
-          
+          if (sellerId.isNotEmpty) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => MessagePage(receiverId: sellerId, receiverEmail: 'Seller')),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Cannot contact seller for this item.')),
+            );
+          }
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: AppUtils.appBlue,
