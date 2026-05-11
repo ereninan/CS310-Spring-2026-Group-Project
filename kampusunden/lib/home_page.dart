@@ -5,9 +5,9 @@ import 'package:kampusunden/discover_page.dart';
 import 'package:kampusunden/product_detail_screen.dart';
 import 'package:kampusunden/cards/product_card.dart';
 import 'package:kampusunden/profile_page.dart';
-
 import 'package:kampusunden/utils.dart';
-void main() => runApp(MaterialApp(home: HomePage()));
+import 'package:shared_preferences/shared_preferences.dart';
+
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -17,6 +17,65 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadSelectedIndex();
+  }
+  
+  Future<void> _loadSelectedIndex() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _selectedIndex = prefs.getInt('selectedIndex') ?? 0;
+    });
+  }
+  
+  Future<void> _saveSelectedIndex(int index) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('selectedIndex', index);
+  }
+
+  final List<Widget> _pages = [
+    const HomeContent(),
+    const DiscoverPage(),
+    const CreateListingApp(),
+    const ChatsApp(),
+    const ProfileApp(),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _pages[_selectedIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        currentIndex: _selectedIndex,
+        selectedItemColor: AppUtils.appBlue,
+        unselectedItemColor: Colors.black,
+        showSelectedLabels: false,
+        showUnselectedLabels: false,
+        onTap: (int index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+          _saveSelectedIndex(index);
+        },
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: ''),
+          BottomNavigationBarItem(icon: Icon(Icons.search), label: ''),
+          BottomNavigationBarItem(icon: Icon(Icons.add_box_rounded), label: ''),
+          BottomNavigationBarItem(icon: Icon(Icons.message_outlined), label: ''),
+          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: ''),
+        ],
+      ),
+    );
+  }
+}
+
+class HomeContent extends StatelessWidget {
+  const HomeContent({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -119,7 +178,7 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             Text("Discovery", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),),
-            //! ITEMS
+            
             Column(
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -176,45 +235,6 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
-
-
-
-
-
-     bottomNavigationBar: BottomNavigationBar(
-  type: BottomNavigationBarType.fixed,
-  currentIndex: _selectedIndex,
-  selectedItemColor: AppUtils.appBlue,
-  unselectedItemColor: Colors.black,
-  showSelectedLabels: false,
-  showUnselectedLabels: false,
-  onTap: (int index) {
-    if (index == 0) {
-      setState(() { _selectedIndex = index; });
-    }
-    else {
-      String routeName = '';
-
-      switch (index) {
-        case 1: routeName = '/discover'; break;
-        case 2: routeName = '/createListing'; break;
-        case 3: routeName = '/chats'; break;
-        case 4: routeName = '/profile'; break;
-      }
-
-      if (routeName.isNotEmpty) {
-        Navigator.pushNamed(context, routeName);
-      }
-    }
-  },
-  items: const [
-    BottomNavigationBarItem(icon: Icon(Icons.home), label: ''),
-    BottomNavigationBarItem(icon: Icon(Icons.search), label: ''),
-    BottomNavigationBarItem(icon: Icon(Icons.add_box_rounded), label: ''),
-    BottomNavigationBarItem(icon: Icon(Icons.message_outlined), label: ''),
-    BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: ''),
-  ],
-),
     );
   }
 }

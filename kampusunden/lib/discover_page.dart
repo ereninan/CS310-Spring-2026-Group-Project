@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:kampusunden/utils.dart';
 import 'package:kampusunden/cards/product_card.dart';
-import 'package:kampusunden/product_detail_screen.dart';
+import 'package:provider/provider.dart';
+import '../providers/listing_provider.dart';
+import '../models/listing_model.dart';
+
 class DiscoverPage extends StatefulWidget {
   const DiscoverPage({super.key});
 
@@ -10,6 +13,8 @@ class DiscoverPage extends StatefulWidget {
 }
 
 class _DiscoverPageState extends State<DiscoverPage> {
+  String _selectedCategory = 'All';
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -32,10 +37,8 @@ class _DiscoverPageState extends State<DiscoverPage> {
                     hintText: "Search",
                     hintStyle: const TextStyle(color: Colors.grey),
                     prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                    // Arka plan rengini görseldeki gibi açık gri yapar
                     filled: true,
                     fillColor: const Color.fromARGB(255, 248, 245, 245), 
-                    // Kenarlıkları tamamen kaldırır ve yuvarlar
                     contentPadding: const EdgeInsets.symmetric(vertical: 0),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(30.0),
@@ -59,44 +62,21 @@ class _DiscoverPageState extends State<DiscoverPage> {
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    ElevatedButton(onPressed: (){}, child: Row(
-                      children: [
-                        Icon(Icons.book, color: Colors.black,),
-                        SizedBox(width: 5,),
-                        Text("Books", style: AppUtils.smallButtons)
-                      ],
-                    )),
-                    SizedBox(width: 5,),
-                    ElevatedButton(onPressed: (){}, child: Row(
-                      children: [
-                        Icon(Icons.computer, color: Colors.black,),
-                        SizedBox(width: 5,),
-                        Text("electronics", style: AppUtils.smallButtons,)
-                      ],
-                    )),
-                    SizedBox(width: 5,),
-                    ElevatedButton(onPressed: (){}, child: Row(
-                      children: [
-                        Icon(Icons.chair, color: Colors.black,),
-                        SizedBox(width: 5,),
-                        Text("Furnitures", style: AppUtils.smallButtons,)
-                      ],
-                    )),
-                    SizedBox(width: 5,),
-                    ElevatedButton(onPressed: (){}, child: Row(
-                      children: [
-                        Icon(Icons.man, color: Colors.black,),
-                        SizedBox(width: 5,),
-                        Text("Clothes", style: AppUtils.smallButtons,)
-                      ],
-                    )),
-                    SizedBox(width: 5,),
+                    _buildCategoryButton('All', Icons.apps),
+                    const SizedBox(width: 5),
+                    _buildCategoryButton('Books', Icons.book),
+                    const SizedBox(width: 5),
+                    _buildCategoryButton('Electronics', Icons.computer),
+                    const SizedBox(width: 5),
+                    _buildCategoryButton('Furniture', Icons.chair),
+                    const SizedBox(width: 5),
+                    _buildCategoryButton('Clothes', Icons.man),
+                    const SizedBox(width: 5),
                   ],
                 ),
                 ),
                 Row(
                   children: [
-                    // FİLTRE BUTONU
                     ElevatedButton(
                       onPressed: () {},
                       child: Row(
@@ -107,9 +87,8 @@ class _DiscoverPageState extends State<DiscoverPage> {
                       ),
                     ),
                     
-                    SizedBox(width: 10), // İki buton arası boşluk
+                    SizedBox(width: 10), 
             
-                    // SIRALAMA BUTONU
                     ElevatedButton(
                       onPressed: () {},
                       child: Row(
@@ -123,52 +102,79 @@ class _DiscoverPageState extends State<DiscoverPage> {
                 ),
                 SizedBox(height: 10,),
                 Text("Marketplace", style: AppUtils.headerStyle,),
-                SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ProductCard(title: "Macbook M3", price: "621", imageUrl: "https://static.ticimax.cloud/cdn-cgi/image/width=574,quality=85/54992/uploads/urunresimleri/buyuk/macbook-pro-13-8-core-cpu-8-core-gpu-a-b45b-4.jpeg"),
-                  SizedBox(width: 10,),
-                  ProductCard(title: "Ipad Air", price: "251", imageUrl: "https://www.pt.com.tr/wp-content/uploads/2024/06/M1eCfV58teDUe1tkUWBxBZjOPq5bi3UeKiDhjG39-2048x2048.webp"),
-                  SizedBox(width: 10,),
-                  ProductCard(title: "Airpods Pro", price: "321", imageUrl: "https://store.storeimages.cdn-apple.com/1/as-images.apple.com/is/airpods-4-select-202409_FV1?wid=976&hei=916&fmt=jpeg&qlt=90&.v=WnVKRVRUTFVsYThXaWkydWViL1Q3ZDZGTE9TV3RDcGJJclBqdUtzdTJYYjNHc3NlSmU2dzJyR1kxZEwyTE1neUJkRlpCNVhYU3AwTldRQldlSnpRa0NZZXAxWFNjRXhITDI1RVE5YVpyU0E"),
-                  ],
-              ),
-            ),
-            SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                  ProductCard(title: "Macbook M3", price: "621", imageUrl: "https://static.ticimax.cloud/cdn-cgi/image/width=574,quality=85/54992/uploads/urunresimleri/buyuk/macbook-pro-13-8-core-cpu-8-core-gpu-a-b45b-4.jpeg"),
-                  SizedBox(width: 10,),
-                  ProductCard(title: "Ipad Air", price: "251", imageUrl: "https://www.pt.com.tr/wp-content/uploads/2024/06/M1eCfV58teDUe1tkUWBxBZjOPq5bi3UeKiDhjG39-2048x2048.webp"),
-                  SizedBox(width: 10,),
-                  ProductCard(title: "Airpods Pro", price: "321", imageUrl: "https://store.storeimages.cdn-apple.com/1/as-images.apple.com/is/airpods-4-select-202409_FV1?wid=976&hei=916&fmt=jpeg&qlt=90&.v=WnVKRVRUTFVsYThXaWkydWViL1Q3ZDZGTE9TV3RDcGJJclBqdUtzdTJYYjNHc3NlSmU2dzJyR1kxZEwyTE1neUJkRlpCNVhYU3AwTldRQldlSnpRa0NZZXAxWFNjRXhITDI1RVE5YVpyU0E"),
-                  ],
-            ),
-                        ),
-                        SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                  ProductCard(title: "Macbook M3", price: "621", imageUrl: "https://static.ticimax.cloud/cdn-cgi/image/width=574,quality=85/54992/uploads/urunresimleri/buyuk/macbook-pro-13-8-core-cpu-8-core-gpu-a-b45b-4.jpeg"),
-                  SizedBox(width: 10,),
-                  ProductCard(title: "Ipad Air", price: "251", imageUrl: "https://www.pt.com.tr/wp-content/uploads/2024/06/M1eCfV58teDUe1tkUWBxBZjOPq5bi3UeKiDhjG39-2048x2048.webp"),
-                  SizedBox(width: 10,),
-                  ProductCard(title: "Airpods Pro", price: "321", imageUrl: "https://store.storeimages.cdn-apple.com/1/as-images.apple.com/is/airpods-4-select-202409_FV1?wid=976&hei=916&fmt=jpeg&qlt=90&.v=WnVKRVRUTFVsYThXaWkydWViL1Q3ZDZGTE9TV3RDcGJJclBqdUtzdTJYYjNHc3NlSmU2dzJyR1kxZEwyTE1neUJkRlpCNVhYU3AwTldRQldlSnpRa0NZZXAxWFNjRXhITDI1RVE5YVpyU0E"),
-                  ],
-            ),
-            ),
-                        
+                StreamBuilder<List<ListingModel>>(
+                  stream: Provider.of<ListingProvider>(context).listingsStream,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Padding(
+                        padding: EdgeInsets.all(20.0),
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    }
+                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      return const Padding(
+                        padding: EdgeInsets.all(20.0),
+                        child: Text("No listings available."),
+                      );
+                    }
+                    final allListings = snapshot.data!;
+                    final listings = _selectedCategory == 'All'
+                        ? allListings
+                        : allListings.where((ad) => ad.category == _selectedCategory).toList();
+
+                    if (listings.isEmpty) {
+                      return const Padding(
+                        padding: EdgeInsets.all(20.0),
+                        child: Text("No listings found in this category."),
+                      );
+                    }
+
+                    return SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: listings.map((ad) {
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 10.0),
+                            child: ProductCard(
+                              title: ad.title, 
+                              price: ad.price, 
+                              imageUrl: ad.imageUrl.isNotEmpty ? ad.imageUrl : "https://via.placeholder.com/150",
+                              sellerId: ad.createdBy,
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    );
+                  }
+                ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildCategoryButton(String categoryName, IconData icon) {
+    bool isSelected = _selectedCategory == categoryName;
+    return ElevatedButton(
+      onPressed: () {
+        setState(() {
+          _selectedCategory = categoryName;
+        });
+      },
+      style: ElevatedButton.styleFrom(
+        backgroundColor: isSelected ? AppUtils.appBlue : Colors.white,
+        foregroundColor: isSelected ? Colors.white : Colors.black,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 18),
+          const SizedBox(width: 5),
+          Text(categoryName, style: TextStyle(fontSize: 14, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+        ],
       ),
     );
   }

@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:kampusunden/cards/active_listing_card.dart';
-import 'package:kampusunden/data/my_listings.dart';
+import 'package:provider/provider.dart';
+import '../providers/listing_provider.dart';
+import '../providers/auth_provider.dart';
+import '../models/listing_model.dart';
+import '../active_list_detail_screen.dart';
+
 class ProfileApp extends StatefulWidget {
   const ProfileApp({super.key});
 
@@ -11,6 +16,9 @@ class ProfileApp extends StatefulWidget {
 class _ProfileAppState extends State<ProfileApp> {
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.user;
+
     return Scaffold(
         backgroundColor: Colors.white,
         appBar: AppBar(
@@ -22,6 +30,16 @@ class _ProfileAppState extends State<ProfileApp> {
               fontWeight: FontWeight.bold,
             ),
           ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.logout, color: Colors.black),
+              onPressed: () async {
+                await authProvider.signOut();
+                if (!mounted) return;
+                Navigator.pushReplacementNamed(context, '/login');
+              },
+            )
+          ],
         ),
         body: ListView(
           children: [
@@ -46,10 +64,10 @@ class _ProfileAppState extends State<ProfileApp> {
               ),
             ),
             const SizedBox(height: 12),
-            const Center(
+            Center(
               child: Text(
-                'Baran Rıfat',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                user?.email?.split('@').first ?? 'User',
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
             ),
             const SizedBox(height: 4),
@@ -70,24 +88,56 @@ class _ProfileAppState extends State<ProfileApp> {
             const SizedBox(height: 12),
             Container(
               height: 80,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                itemCount: dummyAds.length,
-                itemBuilder: (context, index) {
-
-                  final ad = dummyAds[index];
-
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 12.0),
-                    child: activeListingCard(
-                      title: ad['title'] ?? 'No Title',
-                      price: ad['price'] ?? '0',
-                      imageUrl: ad['imageUrl'] ?? '',
-                      index: index,
-                    ),
+              child: user == null ? const Center(child: Text("Please sign in")) : StreamBuilder<List<ListingModel>>(
+                stream: Provider.of<ListingProvider>(context).userListingsStream(user.uid),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Text("No active listings."),
+                    );
+                  }
+                  final listings = snapshot.data!;
+                  return ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    itemCount: listings.length,
+                    itemBuilder: (context, index) {
+                      final ad = listings[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 12.0),
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => acticeListDetail(
+                                  title: ad.title,
+                                  price: ad.price,
+                                  imageUrl: ad.imageUrl.isNotEmpty ? ad.imageUrl : 'https://via.placeholder.com/150',
+                                  index: index,
+                                  id: ad.id,
+                                  createdBy: ad.createdBy,
+                                ),
+                              ),
+                            );
+                          },
+                          child: IgnorePointer(
+                            child: activeListingCard(
+                              title: ad.title,
+                              price: ad.price,
+                              imageUrl: ad.imageUrl.isNotEmpty ? ad.imageUrl : 'https://via.placeholder.com/150',
+                              index: index,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   );
-                },
+                }
               ),
             ),
             const SizedBox(height: 24),
@@ -210,6 +260,5 @@ class _ProfileAppState extends State<ProfileApp> {
           ],
         ),
       );
-    
   }
 }
