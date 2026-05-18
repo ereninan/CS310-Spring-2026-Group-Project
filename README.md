@@ -22,14 +22,9 @@ University students frequently need to buy or sell short-term essentials (like m
   * Prepares and maintains all written project materials.
   * Ensures timely and correct submission of proposals and deliverables.
  
-
 * **Hamza Eren İnan – 34502 | Integration & Repository Lead**
   * Manages Git/GitHub repository.
   * Coordinates merges, resolves conflicts, and ensures version control discipline.
-
-* **Baran Rıfat Hidayet – 32698 | Testing & Quality Assurance Lead**
-  * Reviews and tests features regularly.
-  * Ensures code runs smoothly and follows project standards.
 
 
 ## 🛠️ Built With
