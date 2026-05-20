@@ -4,11 +4,13 @@ import 'package:kampusunden/product_detail_screen.dart';
 import 'package:kampusunden/utils.dart';
 class activeListingCard extends StatelessWidget {
   final String title;
+  final String brand;
   final String price;
   final String imageUrl;
   final int index;
   const activeListingCard({super.key,
     required this.title,
+    required this.brand,
     required this.price,
     required this.imageUrl,
     required this.index});
@@ -21,7 +23,7 @@ class activeListingCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => acticeListDetail(title: title, price: price, imageUrl: imageUrl, index: index),
+            builder: (context) => acticeListDetail(title: title, brand: brand, price: price, imageUrl: imageUrl, index: index),
           ),
         );
       },
@@ -63,7 +65,7 @@ class activeListingCard extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    title,
+                    brand,
                     style: AppUtils.product_card_title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

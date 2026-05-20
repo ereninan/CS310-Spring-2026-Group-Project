@@ -6,6 +6,7 @@ import '../providers/auth_provider.dart';
 
 class acticeListDetail extends StatefulWidget {
   final String title;
+  final String brand;
   final String price;
   final String imageUrl;
   final int index;
@@ -15,6 +16,7 @@ class acticeListDetail extends StatefulWidget {
   const acticeListDetail({
     super.key,
     required this.title,
+    required this.brand,
     required this.price,
     required this.imageUrl,
     required this.index,
@@ -35,7 +37,7 @@ class _acticeListDetailState extends State<acticeListDetail> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text(widget.title, style: const TextStyle(color: Colors.black)),
+        title: Text(widget.brand, style: const TextStyle(color: Colors.black)),
         centerTitle: true,
         backgroundColor: Colors.white,
         iconTheme: const IconThemeData(color: Colors.black),
@@ -90,12 +92,12 @@ class _acticeListDetailState extends State<acticeListDetail> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(widget.title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                  Text(widget.brand, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
                   Text('${widget.price} USD', style: AppUtils.product_card_title),
                   const SizedBox(height: 12),
                   Text(
-                    'This is a detailed description for ${widget.title}. The quality and performance are top-notch for campus life!',
+                    widget.title,
                     style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                   ),
                 ],

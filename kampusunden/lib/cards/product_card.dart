@@ -3,6 +3,7 @@ import 'package:kampusunden/utils.dart';
 import 'package:kampusunden/product_detail_screen.dart';
 class ProductCard extends StatelessWidget {
   final String title;
+  final String brand;
   final String price;
   final String imageUrl;
   final String sellerId;
@@ -10,6 +11,7 @@ class ProductCard extends StatelessWidget {
   const ProductCard({
     super.key,
     required this.title,
+    required this.brand,
     required this.price,
     required this.imageUrl,
     this.sellerId = '',
@@ -21,7 +23,7 @@ class ProductCard extends StatelessWidget {
       onTap: (){Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => ProductDetailScreen(title: title, price: price, imageUrl: imageUrl, sellerId: sellerId),
+          builder: (context) => ProductDetailScreen(title: title, brand: brand, price: price, imageUrl: imageUrl, sellerId: sellerId),
         ),
       );},
       child: Container(
@@ -61,7 +63,7 @@ class ProductCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(left: 5.0),
               child: Text(
-                title,
+                brand,
                 style: AppUtils.product_card_title,
                 overflow: TextOverflow.ellipsis,
               ),

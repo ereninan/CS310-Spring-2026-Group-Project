@@ -9,6 +9,7 @@ class ListingModel {
   final String brand;
   final String createdBy;
   final DateTime createdAt;
+  final bool isWanted;
 
   ListingModel({
     required this.id,
@@ -19,6 +20,7 @@ class ListingModel {
     required this.brand,
     required this.createdBy,
     required this.createdAt,
+    this.isWanted = false,
   });
 
   factory ListingModel.fromMap(Map<String, dynamic> data, String documentId) {
@@ -31,6 +33,7 @@ class ListingModel {
       brand: data['brand'] ?? '',
       createdBy: data['createdBy'] ?? '',
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      isWanted: data['isWanted'] ?? false,
     );
   }
 
@@ -43,6 +46,7 @@ class ListingModel {
       'brand': brand,
       'createdBy': createdBy,
       'createdAt': Timestamp.fromDate(createdAt),
+      'isWanted': isWanted,
     };
   }
 }
