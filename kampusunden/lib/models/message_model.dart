@@ -5,12 +5,16 @@ class MessageModel {
   final String receiverId;
   final String text;
   final Timestamp timestamp;
+  final String type; // 'text', 'offer', 'offer_accepted'
+  final String? offerAmount;
 
   MessageModel({
     required this.senderId,
     required this.receiverId,
     required this.text,
     required this.timestamp,
+    this.type = 'text',
+    this.offerAmount,
   });
 
   Map<String, dynamic> toMap() {
@@ -19,6 +23,8 @@ class MessageModel {
       'receiverId': receiverId,
       'text': text,
       'timestamp': timestamp,
+      'type': type,
+      'offerAmount': offerAmount,
     };
   }
 
@@ -28,6 +34,8 @@ class MessageModel {
       receiverId: map['receiverId'] ?? '',
       text: map['text'] ?? '',
       timestamp: map['timestamp'] as Timestamp,
+      type: map['type'] ?? 'text',
+      offerAmount: map['offerAmount'],
     );
   }
 }

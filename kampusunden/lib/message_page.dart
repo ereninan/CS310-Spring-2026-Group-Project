@@ -103,26 +103,132 @@ class _MessagePageState extends State<MessagePage> {
   Widget _buildMessageItem(DocumentSnapshot document) {
     Map<String, dynamic> data = document.data() as Map<String, dynamic>;
     bool isCurrentUser = data['senderId'] == _auth.currentUser!.uid;
+    String type = data['type'] ?? 'text';
+    String? offerAmount = data['offerAmount'];
 
     var alignment = isCurrentUser ? MainAxisAlignment.end : MainAxisAlignment.start;
     var bubbleColor = isCurrentUser ? Colors.blue.shade800 : Colors.grey.shade200;
     var textColor = isCurrentUser ? Colors.white : Colors.black;
+
+    Widget content;
+
+    if (type == 'offer_accepted') {
+      content = Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.green.shade600,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          data['text'],
+          style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+        ),
+      );
+    } else if (type == 'offer') {
+      content = Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: bubbleColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: isCurrentUser ? Colors.blue.shade300 : Colors.grey.shade400, width: 2),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              isCurrentUser ? 'You made an offer of $offerAmount ₺' : 'User made an offer of $offerAmount ₺',
+              style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            if (!isCurrentUser) ...[
+              const SizedBox(height: 12),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ElevatedButton(
+                    onPressed: () {
+                      _chatService.sendMessage(widget.receiverId, 'Offer of $offerAmount ₺ accepted!', type: 'offer_accepted');
+                    },
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                    child: const Text('Accept', style: TextStyle(color: Colors.white)),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      final TextEditingController offerController = TextEditingController();
+                      showDialog(
+                        context: context,
+                        builder: (context) {
+                          return AlertDialog(
+                            title: const Text('Counter Offer'),
+                            content: TextField(
+                              controller: offerController,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                hintText: 'Enter your counter price (₺)',
+                              ),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text('Cancel'),
+                              ),
+                              ElevatedButton(
+                                onPressed: () async {
+                                  if (offerController.text.isNotEmpty) {
+                                    final String price = offerController.text.trim();
+                                    Navigator.pop(context); // Close dialog
+                                    await _chatService.sendMessage(
+                                      widget.receiverId,
+                                      'Made a counter offer of $price ₺',
+                                      type: 'offer',
+                                      offerAmount: price,
+                                    );
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+                                child: const Text('Send Counter', style: TextStyle(color: Colors.white)),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+                    child: const Text('Counter', style: TextStyle(color: Colors.white)),
+                  ),
+                ],
+              ),
+            ] else ...[
+              const SizedBox(height: 8),
+              Text('Waiting for response...', style: TextStyle(color: textColor.withOpacity(0.8), fontSize: 12, fontStyle: FontStyle.italic)),
+            ]
+          ],
+        ),
+      );
+    } else {
+      // Regular text
+      content = Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: bubbleColor,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          data['text'],
+          style: TextStyle(color: textColor, fontSize: 14),
+        ),
+      );
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
       child: Row(
         mainAxisAlignment: alignment,
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: bubbleColor,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.7),
-            child: Text(
-              data['text'],
-              style: TextStyle(color: textColor, fontSize: 14),
+          Flexible(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.85),
+              child: content,
             ),
           ),
         ],

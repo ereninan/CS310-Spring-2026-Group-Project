@@ -31,9 +31,6 @@ class _ChatsAppState extends State<ChatsApp> {
       ),
       body: Column(
         children: [
-          const SizedBox(height: 12),
-          _buildTabs(),
-          const SizedBox(height: 24),
           Expanded(
             child: _buildChatList(),
           ),
@@ -42,52 +39,6 @@ class _ChatsAppState extends State<ChatsApp> {
     );
   }
 
-  Widget _buildTabs() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            decoration: BoxDecoration(
-              color: AppUtils.appBlue,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Text(
-              'Messages',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Text(
-              'Offers',
-              style: TextStyle(color: Colors.black),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Text(
-              'Requests',
-              style: TextStyle(color: Colors.black),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildChatList() {
     return StreamBuilder<QuerySnapshot>(
@@ -127,7 +78,14 @@ class _ChatsAppState extends State<ChatsApp> {
         String displayName = "User";
         if (userSnapshot.hasData && userSnapshot.data!.exists) {
           Map<String, dynamic> userData = userSnapshot.data!.data() as Map<String, dynamic>;
-          displayName = userData['email'] ?? 'User';
+          final email = userData['email'] ?? 'User';
+          displayName = email;
+          if (email.contains('@')) {
+            displayName = email.split('@').first;
+            if (displayName.isNotEmpty) {
+              displayName = displayName[0].toUpperCase() + displayName.substring(1);
+            }
+          }
         }
 
         return InkWell(
