@@ -1,5 +1,8 @@
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -20,8 +23,10 @@ class _CreateListingAppState extends State<CreateListingApp> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
   
-  File? _selectedImage;
+  XFile? _selectedImage;
+  Uint8List? _imageBytes;
   bool _isUploading = false;
+  bool _isWanted = false;
   String _selectedCategory = 'Electronics';
   final ImagePicker _picker = ImagePicker();
 
@@ -36,18 +41,33 @@ class _CreateListingAppState extends State<CreateListingApp> {
   Future<void> _pickImage() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 70);
     if (image != null) {
-      setState(() {
-        _selectedImage = File(image.path);
-      });
+      if (kIsWeb) {
+        final bytes = await image.readAsBytes();
+        setState(() {
+          _selectedImage = image;
+          _imageBytes = bytes;
+        });
+      } else {
+        setState(() {
+          _selectedImage = image;
+          _imageBytes = null;
+        });
+      }
     }
   }
 
-  Future<String> _uploadImage(File imageFile) async {
+  Future<String> _uploadImage() async {
     try {
       final String fileName = DateTime.now().millisecondsSinceEpoch.toString();
       final Reference ref = FirebaseStorage.instance.ref().child('listing_images').child('$fileName.jpg');
       
-      final UploadTask uploadTask = ref.putFile(imageFile);
+      UploadTask uploadTask;
+      if (kIsWeb && _imageBytes != null) {
+        uploadTask = ref.putData(_imageBytes!, SettableMetadata(contentType: 'image/jpeg'));
+      } else {
+        uploadTask = ref.putFile(File(_selectedImage!.path));
+      }
+      
       final TaskSnapshot snapshot = await uploadTask;
       
       final String downloadUrl = await snapshot.ref.getDownloadURL();
@@ -83,29 +103,60 @@ class _CreateListingAppState extends State<CreateListingApp> {
               ),
               child: Row(
                 children: [
-                  Container(
-                    width: 170,
-                    padding: const EdgeInsets.symmetric(vertical: 12.0),
-                    decoration: BoxDecoration(
-                      color: AppUtils.appBlue,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text('📦'),
-                        SizedBox(width: 8),
-                        Text(
-                          'For Sale',
-                          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _isWanted = false;
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12.0),
+                        decoration: BoxDecoration(
+                          color: !_isWanted ? AppUtils.appBlue : Colors.transparent,
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                      ],
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text('📦'),
+                            const SizedBox(width: 8),
+                            Text(
+                              'For Sale',
+                              style: TextStyle(color: !_isWanted ? Colors.white : Colors.black, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  const Text('🙏'),
-                  const SizedBox(width: 8),
-                  const Text('Wanted', style: TextStyle(fontWeight: FontWeight.bold)),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _isWanted = true;
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12.0),
+                        decoration: BoxDecoration(
+                          color: _isWanted ? AppUtils.appBlue : Colors.transparent,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text('🙏'),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Wanted',
+                              style: TextStyle(color: _isWanted ? Colors.white : Colors.black, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -124,7 +175,9 @@ class _CreateListingAppState extends State<CreateListingApp> {
                         color: Colors.grey.shade100,
                         borderRadius: BorderRadius.circular(16),
                         image: _selectedImage != null 
-                            ? DecorationImage(image: FileImage(_selectedImage!), fit: BoxFit.cover)
+                            ? (kIsWeb && _imageBytes != null 
+                                ? DecorationImage(image: MemoryImage(_imageBytes!), fit: BoxFit.cover)
+                                : DecorationImage(image: FileImage(File(_selectedImage!.path)), fit: BoxFit.cover))
                             : null,
                       ),
                       child: _selectedImage == null ? const Column(
@@ -199,11 +252,18 @@ class _CreateListingAppState extends State<CreateListingApp> {
                   const Text('Brand:', style: AppUtils.headerStyle),
                   TextField(controller: _brandController, decoration: const InputDecoration(hintText: 'Enter brand name')),
                   const SizedBox(height: 16),
-                  const Text('Title:', style: AppUtils.headerStyle),
-                  TextField(controller: _titleController, decoration: const InputDecoration(hintText: 'Enter product title')),
+                  const Text('Description:', style: AppUtils.headerStyle),
+                  TextField(controller: _titleController, decoration: const InputDecoration(hintText: 'Enter product description')),
                   const SizedBox(height: 16),
                   const Text('Price:', style: AppUtils.headerStyle),
-                  TextField(controller: _priceController, decoration: const InputDecoration(hintText: 'Enter price ₺')),
+                  TextField(
+                    controller: _priceController,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                    ],
+                    decoration: const InputDecoration(hintText: 'Enter price ₺'),
+                  ),
                 ],
               ),
             ),
@@ -232,7 +292,7 @@ class _CreateListingAppState extends State<CreateListingApp> {
               try {
                 String uploadedImageUrl = "https://via.placeholder.com/150"; // default fallback
                 if (_selectedImage != null) {
-                  uploadedImageUrl = await _uploadImage(_selectedImage!);
+                  uploadedImageUrl = await _uploadImage();
                 }
 
                 final newListing = ListingModel(
@@ -244,6 +304,7 @@ class _CreateListingAppState extends State<CreateListingApp> {
                   brand: _brandController.text.trim(),
                   createdBy: user.uid,
                   createdAt: DateTime.now(),
+                  isWanted: _isWanted,
                 );
                 
                 await Provider.of<ListingProvider>(context, listen: false).addListing(newListing);
@@ -254,6 +315,7 @@ class _CreateListingAppState extends State<CreateListingApp> {
                 _brandController.clear();
                 setState(() {
                   _selectedImage = null;
+                  _imageBytes = null;
                 });
               } catch (e) {
                 if (!mounted) return;

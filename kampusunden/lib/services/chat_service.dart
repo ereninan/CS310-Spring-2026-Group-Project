@@ -21,7 +21,7 @@ class ChatService {
   }
 
   // Send a message
-  Future<void> sendMessage(String receiverId, String message) async {
+  Future<void> sendMessage(String receiverId, String message, {String type = 'text', String? offerAmount}) async {
     final String currentUserId = _auth.currentUser!.uid;
     final Timestamp timestamp = Timestamp.now();
 
@@ -30,6 +30,8 @@ class ChatService {
       receiverId: receiverId,
       text: message,
       timestamp: timestamp,
+      type: type,
+      offerAmount: offerAmount,
     );
 
     List<String> ids = [currentUserId, receiverId];

@@ -7,6 +7,10 @@ import 'package:kampusunden/cards/product_card.dart';
 import 'package:kampusunden/profile_page.dart';
 import 'package:kampusunden/utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
+import 'providers/listing_provider.dart';
+import 'providers/auth_provider.dart';
+import 'models/listing_model.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -36,18 +40,50 @@ class _HomePageState extends State<HomePage> {
     await prefs.setInt('selectedIndex', index);
   }
 
-  final List<Widget> _pages = [
-    const HomeContent(),
-    const DiscoverPage(),
-    const CreateListingApp(),
-    const ChatsApp(),
-    const ProfileApp(),
-  ];
+  String _discoverCategory = 'All';
+  String _discoverSearchQuery = '';
+
+  Widget _getPage(int index) {
+    switch (index) {
+      case 0:
+        return HomeContent(
+          onSearch: (query) {
+            setState(() {
+              _discoverSearchQuery = query;
+              _discoverCategory = 'All';
+              _selectedIndex = 1;
+            });
+            _saveSelectedIndex(1);
+          },
+          onCategorySelect: (category) {
+            setState(() {
+              _discoverCategory = category;
+              _discoverSearchQuery = '';
+              _selectedIndex = 1;
+            });
+            _saveSelectedIndex(1);
+          },
+        );
+      case 1:
+        return DiscoverPage(
+          initialCategory: _discoverCategory,
+          initialSearchQuery: _discoverSearchQuery,
+        );
+      case 2:
+        return const CreateListingApp();
+      case 3:
+        return const ChatsApp();
+      case 4:
+        return const ProfileApp();
+      default:
+        return HomeContent(onSearch: (_) {}, onCategorySelect: (_) {});
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[_selectedIndex],
+      body: _getPage(_selectedIndex),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,
@@ -73,13 +109,43 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-class HomeContent extends StatelessWidget {
-  const HomeContent({super.key});
+class HomeContent extends StatefulWidget {
+  final Function(String) onSearch;
+  final Function(String) onCategorySelect;
+
+  const HomeContent({
+    super.key,
+    required this.onSearch,
+    required this.onCategorySelect,
+  });
+
+  @override
+  State<HomeContent> createState() => _HomeContentState();
+}
+
+class _HomeContentState extends State<HomeContent> {
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final userEmail = authProvider.user?.email ?? 'User';
+    String userName = userEmail;
+    if (userEmail.contains('@')) {
+      userName = userEmail.split('@').first;
+      if (userName.isNotEmpty) {
+        userName = userName[0].toUpperCase() + userName.substring(1);
+      }
+    }
+
     return Scaffold(
-      appBar: AppBar(title: Text("Hi, Baran 👋", style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),),
+      appBar: AppBar(title: Text("Hi, $userName 👋", style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),),
       elevation: 0,
       shadowColor: Colors.black,
       ),
@@ -111,6 +177,12 @@ class HomeContent extends StatelessWidget {
             Padding(
           padding: const EdgeInsets.only(left: 8.0),
           child: TextField(
+            controller: _searchController,
+            onSubmitted: (value) {
+              if (value.trim().isNotEmpty) {
+                widget.onSearch(value.trim());
+              }
+            },
             decoration: InputDecoration(
               hintText: "Search",
               hintStyle: const TextStyle(color: Colors.grey),
@@ -142,7 +214,7 @@ class HomeContent extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  ElevatedButton(onPressed: (){}, child: Row(
+                  ElevatedButton(onPressed: () => widget.onCategorySelect('Books'), child: Row(
                     children: [
                       Icon(Icons.book, color: Colors.black,),
                       SizedBox(width: 5,),
@@ -150,23 +222,23 @@ class HomeContent extends StatelessWidget {
                     ],
                   )),
                   SizedBox(width: 5,),
-                  ElevatedButton(onPressed: (){}, child: Row(
+                  ElevatedButton(onPressed: () => widget.onCategorySelect('Electronics'), child: Row(
                     children: [
                       Icon(Icons.computer, color: Colors.black,),
                       SizedBox(width: 5,),
-                      Text("electronics", style: AppUtils.smallButtons,)
+                      Text("Electronics", style: AppUtils.smallButtons,)
                     ],
                   )),
                   SizedBox(width: 5,),
-                  ElevatedButton(onPressed: (){}, child: Row(
+                  ElevatedButton(onPressed: () => widget.onCategorySelect('Furniture'), child: Row(
                     children: [
                       Icon(Icons.chair, color: Colors.black,),
                       SizedBox(width: 5,),
-                      Text("Furnitures", style: AppUtils.smallButtons,)
+                      Text("Furniture", style: AppUtils.smallButtons,)
                     ],
                   )),
                   SizedBox(width: 5,),
-                  ElevatedButton(onPressed: (){}, child: Row(
+                  ElevatedButton(onPressed: () => widget.onCategorySelect('Clothes'), child: Row(
                     children: [
                       Icon(Icons.man, color: Colors.black,),
                       SizedBox(width: 5,),
@@ -177,58 +249,89 @@ class HomeContent extends StatelessWidget {
                 ],
               ),
             ),
-            Text("Discovery", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),),
-            
-            Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ProductCard(title: "Macbook M3", price: "621", imageUrl: "https://static.ticimax.cloud/cdn-cgi/image/width=574,quality=85/54992/uploads/urunresimleri/buyuk/macbook-pro-13-8-core-cpu-8-core-gpu-a-b45b-4.jpeg"),
-                  SizedBox(width: 10,),
-                  ProductCard(title: "Ipad Air", price: "251", imageUrl: "https://www.pt.com.tr/wp-content/uploads/2024/06/M1eCfV58teDUe1tkUWBxBZjOPq5bi3UeKiDhjG39-2048x2048.webp"),
-                  SizedBox(width: 10,),
-                  ProductCard(title: "Airpods Pro", price: "321", imageUrl: "https://store.storeimages.cdn-apple.com/1/as-images.apple.com/is/airpods-4-select-202409_FV1?wid=976&hei=916&fmt=jpeg&qlt=90&.v=WnVKRVRUTFVsYThXaWkydWViL1Q3ZDZGTE9TV3RDcGJJclBqdUtzdTJYYjNHc3NlSmU2dzJyR1kxZEwyTE1neUJkRlpCNVhYU3AwTldRQldlSnpRa0NZZXAxWFNjRXhITDI1RVE5YVpyU0E"),
-                  ],
-                ),
-              ),
-                SizedBox(height: 15,),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                  ProductCard(title: "Macbook M3", price: "621", imageUrl: "https://static.ticimax.cloud/cdn-cgi/image/width=574,quality=85/54992/uploads/urunresimleri/buyuk/macbook-pro-13-8-core-cpu-8-core-gpu-a-b45b-4.jpeg"),
-                  SizedBox(width: 10,),
-                  ProductCard(title: "Ipad Air", price: "251", imageUrl: "https://www.pt.com.tr/wp-content/uploads/2024/06/M1eCfV58teDUe1tkUWBxBZjOPq5bi3UeKiDhjG39-2048x2048.webp"),
-                  SizedBox(width: 10,),
-                  ProductCard(title: "Airpods Pro", price: "321", imageUrl: "https://store.storeimages.cdn-apple.com/1/as-images.apple.com/is/airpods-4-select-202409_FV1?wid=976&hei=916&fmt=jpeg&qlt=90&.v=WnVKRVRUTFVsYThXaWkydWViL1Q3ZDZGTE9TV3RDcGJJclBqdUtzdTJYYjNHc3NlSmU2dzJyR1kxZEwyTE1neUJkRlpCNVhYU3AwTldRQldlSnpRa0NZZXAxWFNjRXhITDI1RVE5YVpyU0E"),
-                  ],
-                  ),
-                ),
-                SizedBox(height: 15,),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                  ProductCard(title: "Macbook M3", price: "621", imageUrl: "https://static.ticimax.cloud/cdn-cgi/image/width=574,quality=85/54992/uploads/urunresimleri/buyuk/macbook-pro-13-8-core-cpu-8-core-gpu-a-b45b-4.jpeg"),
-                  SizedBox(width: 10,),
-                  ProductCard(title: "Ipad Air", price: "251", imageUrl: "https://www.pt.com.tr/wp-content/uploads/2024/06/M1eCfV58teDUe1tkUWBxBZjOPq5bi3UeKiDhjG39-2048x2048.webp"),
-                  SizedBox(width: 10,),
-                  ProductCard(title: "Airpods Pro", price: "321", imageUrl: "https://store.storeimages.cdn-apple.com/1/as-images.apple.com/is/airpods-4-select-202409_FV1?wid=976&hei=916&fmt=jpeg&qlt=90&.v=WnVKRVRUTFVsYThXaWkydWViL1Q3ZDZGTE9TV3RDcGJJclBqdUtzdTJYYjNHc3NlSmU2dzJyR1kxZEwyTE1neUJkRlpCNVhYU3AwTldRQldlSnpRa0NZZXAxWFNjRXhITDI1RVE5YVpyU0E"),
-                  ],
-                  ),
-                ),
+            Text("Latest Requests", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),),
+            SizedBox(height: 10,),
+            StreamBuilder<List<ListingModel>>(
+              stream: Provider.of<ListingProvider>(context).listingsStream,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Padding(
+                    padding: EdgeInsets.all(20.0),
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.all(20.0),
+                    child: Text("No listings available."),
+                  );
+                }
+                
+                final allListings = snapshot.data!;
+                
+                final wantedListings = allListings.where((ad) => ad.isWanted).toList();
+                wantedListings.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+                
+                final saleListings = allListings.where((ad) => !ad.isWanted).toList();
+                saleListings.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
-              ],
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (wantedListings.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: Text("No requests right now."),
+                      )
+                    else
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: wantedListings.map((ad) => Padding(
+                            padding: const EdgeInsets.only(right: 10.0),
+                            child: ProductCard(
+                              title: ad.title,
+                              brand: ad.brand,
+                              price: ad.price,
+                              imageUrl: ad.imageUrl.isNotEmpty ? ad.imageUrl : "https://via.placeholder.com/150",
+                              sellerId: ad.createdBy,
+                            ),
+                          )).toList(),
+                        ),
+                      ),
+                      
+                    const SizedBox(height: 20,),
+                    const Text("Latest For Sale", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),),
+                    const SizedBox(height: 10,),
+                    
+                    if (saleListings.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: Text("No items for sale right now."),
+                      )
+                    else
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: saleListings.map((ad) => Padding(
+                            padding: const EdgeInsets.only(right: 10.0),
+                            child: ProductCard(
+                              title: ad.title,
+                              brand: ad.brand,
+                              price: ad.price,
+                              imageUrl: ad.imageUrl.isNotEmpty ? ad.imageUrl : "https://via.placeholder.com/150",
+                              sellerId: ad.createdBy,
+                            ),
+                          )).toList(),
+                        ),
+                      ),
+                  ],
+                );
+              }
             ),
 
           ],

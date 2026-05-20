@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import '../../utils.dart';
-import 'message_page.dart';
+import 'package:kampusunden/message_page.dart';
+import 'package:kampusunden/utils.dart';
+import 'services/chat_service.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   // Dışarıdan gelecek değişkenler
   final String title;
+  final String brand;
   final String price;
   final String imageUrl;
   final String sellerId;
@@ -12,6 +14,7 @@ class ProductDetailScreen extends StatefulWidget {
   const ProductDetailScreen({
     super.key,
     required this.title,
+    required this.brand,
     required this.price,
     required this.imageUrl,
     this.sellerId = '',
@@ -28,7 +31,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       backgroundColor: Colors.white,
       appBar: AppBar(
 
-        title: Text(widget.title, style: const TextStyle(color: Colors.black)),
+        title: Text(widget.brand, style: const TextStyle(color: Colors.black)),
         centerTitle: true,
         backgroundColor: Colors.white,
         iconTheme: const IconThemeData(color: Colors.black),
@@ -86,12 +89,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(widget.title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                  Text(widget.brand, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
                   Text('${widget.price} USD', style: AppUtils.product_card_title),
                   const SizedBox(height: 12),
                   Text(
-                    'This is a detailed description for ${widget.title}. The quality and performance are top-notch for campus life!',
+                    widget.title,
                     style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                   ),
                 ],
@@ -114,9 +117,52 @@ Widget _buildBottomMessageBar(BuildContext context, String sellerId) {
       child: ElevatedButton(
         onPressed: () {
           if (sellerId.isNotEmpty) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => MessagePage(receiverId: sellerId, receiverEmail: 'Seller')),
+            final TextEditingController offerController = TextEditingController();
+            showDialog(
+              context: context,
+              builder: (context) {
+                return AlertDialog(
+                  title: const Text('Make an Offer'),
+                  content: TextField(
+                    controller: offerController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      hintText: 'Enter your price (₺)',
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () async {
+                        if (offerController.text.isNotEmpty) {
+                          final String price = offerController.text.trim();
+                          Navigator.pop(context); // Close dialog
+                          
+                          // Send the offer message
+                          await ChatService().sendMessage(
+                            sellerId,
+                            'Made an offer of $price ₺',
+                            type: 'offer',
+                            offerAmount: price,
+                          );
+
+                          // Go to Message Page
+                          if (!context.mounted) return;
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => MessagePage(receiverId: sellerId, receiverEmail: 'Seller')),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(backgroundColor: AppUtils.appBlue),
+                      child: const Text('Send Offer', style: TextStyle(color: Colors.white)),
+                    ),
+                  ],
+                );
+              },
             );
           } else {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -128,7 +174,7 @@ Widget _buildBottomMessageBar(BuildContext context, String sellerId) {
           backgroundColor: AppUtils.appBlue,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
-        child: const Text('Message', style: TextStyle(color: Colors.white, fontSize: 16)),
+        child: const Text('Make Offer', style: TextStyle(color: Colors.white, fontSize: 16)),
       ),
     ),
   );

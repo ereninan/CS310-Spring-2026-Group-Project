@@ -1,30 +1,31 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:kampusunden/main.dart';
+import 'package:kampusunden/cards/product_card.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('ProductCard renders correct title, brand, and price', (WidgetTester tester) async {
+    // Build the ProductCard in a testable environment
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: ProductCard(
+            title: 'Dorm Fridge',
+            brand: 'Beko',
+            price: '2500',
+            imageUrl: '',
+            sellerId: 'seller123',
+          ),
+        ),
+      ),
+    );
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    // Verify if the Brand name is rendered
+    expect(find.text('Beko'), findsOneWidget);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    // Verify if the Price is rendered with format "Price: 2500"
+    expect(find.text('Price: 2500'), findsOneWidget);
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // Verify if the image placeholder icon is rendered since imageUrl is empty
+    expect(find.byIcon(Icons.image_not_supported), findsOneWidget);
   });
 }
