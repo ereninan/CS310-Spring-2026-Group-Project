@@ -30,9 +30,6 @@ University students undergo constant transitions (moving into dorms, changing ac
   * Formulates written reports, compiles submissions, and ensures requirements compliance.
 * **Hamza Eren İnan (34502) — Integration & Repository Lead**
   * Oversees Git/GitHub repository structure, coordinates version control, and manages branches.
-* **Baran Rıfat Hidayet (32698) — Testing & Quality Assurance Lead**
-  * Conducts regular app manual testing, validates test coverage, and ensures build stability.
-
 ---
 
 ## 🚀 Key Features & Functionality
