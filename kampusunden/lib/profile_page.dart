@@ -5,6 +5,8 @@ import '../providers/listing_provider.dart';
 import '../providers/auth_provider.dart';
 import '../models/listing_model.dart';
 import '../active_list_detail_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'settings_page.dart';
 
 class ProfileApp extends StatefulWidget {
   const ProfileApp({super.key});
@@ -71,10 +73,34 @@ class _ProfileAppState extends State<ProfileApp> {
               ),
             ),
             const SizedBox(height: 4),
-            const Center(
-              child: Text(
-                'Computer Science | Senior | SU',
-                style: TextStyle(color: Colors.grey, fontSize: 14),
+            Center(
+              child: user == null ? const SizedBox() : StreamBuilder<DocumentSnapshot>(
+                stream: FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.hasData && snapshot.data!.exists) {
+                    final data = snapshot.data!.data() as Map<String, dynamic>;
+                    final dept = data['department'] ?? '';
+                    final grade = data['grade'] ?? '';
+                    final uni = data['university'] ?? '';
+                    
+                    List<String> parts = [];
+                    if (dept.isNotEmpty) parts.add(dept);
+                    if (grade.isNotEmpty) parts.add(grade);
+                    if (uni.isNotEmpty) parts.add(uni);
+                    
+                    String display = parts.join(' | ');
+                    if (display.isEmpty) display = 'Update profile in Settings';
+                    
+                    return Text(
+                      display,
+                      style: const TextStyle(color: Colors.grey, fontSize: 14),
+                    );
+                  }
+                  return const Text(
+                    'Loading...',
+                    style: TextStyle(color: Colors.grey, fontSize: 14),
+                  );
+                }
               ),
             ),
             const SizedBox(height: 30),
@@ -100,7 +126,13 @@ class _ProfileAppState extends State<ProfileApp> {
                       child: Text("No active listings."),
                     );
                   }
-                  final listings = snapshot.data!;
+                  final listings = snapshot.data!.where((l) => !l.isWanted).toList();
+                  if (listings.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Text("No active listings."),
+                    );
+                  }
                   return ListView.builder(
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -116,6 +148,7 @@ class _ProfileAppState extends State<ProfileApp> {
                               MaterialPageRoute(
                                 builder: (context) => acticeListDetail(
                                   title: ad.title,
+                                  brand: ad.brand,
                                   price: ad.price,
                                   imageUrl: ad.imageUrl.isNotEmpty ? ad.imageUrl : 'https://via.placeholder.com/150',
                                   index: index,
@@ -128,6 +161,7 @@ class _ProfileAppState extends State<ProfileApp> {
                           child: IgnorePointer(
                             child: activeListingCard(
                               title: ad.title,
+                              brand: ad.brand,
                               price: ad.price,
                               imageUrl: ad.imageUrl.isNotEmpty ? ad.imageUrl : 'https://via.placeholder.com/150',
                               index: index,
@@ -150,108 +184,91 @@ class _ProfileAppState extends State<ProfileApp> {
             ),
             const SizedBox(height: 12),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(
-                children: [
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Center(
-                      child: Text('📚', style: TextStyle(fontSize: 35)),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Center(
-                      child: Text('👕', style: TextStyle(fontSize: 35)),
-                    ),
-                  ),
-                ],
+              height: 80,
+              child: user == null ? const Center(child: Text("Please sign in")) : StreamBuilder<List<ListingModel>>(
+                stream: Provider.of<ListingProvider>(context).userListingsStream(user.uid),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Text("No active requests."),
+                    );
+                  }
+                  final requests = snapshot.data!.where((l) => l.isWanted).toList();
+                  if (requests.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Text("No active requests."),
+                    );
+                  }
+                  return ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    itemCount: requests.length,
+                    itemBuilder: (context, index) {
+                      final ad = requests[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 12.0),
+                        child: InkWell(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => acticeListDetail(
+                                  title: ad.title,
+                                  brand: ad.brand,
+                                  price: ad.price,
+                                  imageUrl: ad.imageUrl.isNotEmpty ? ad.imageUrl : 'https://via.placeholder.com/150',
+                                  index: index,
+                                  id: ad.id,
+                                  createdBy: ad.createdBy,
+                                ),
+                              ),
+                            );
+                          },
+                          child: IgnorePointer(
+                            child: activeListingCard(
+                              title: ad.title,
+                              brand: ad.brand,
+                              price: ad.price,
+                              imageUrl: ad.imageUrl.isNotEmpty ? ad.imageUrl : 'https://via.placeholder.com/150',
+                              index: index,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                }
               ),
             ),
             const SizedBox(height: 30),
             Column(
               children: [
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Row(
-                    children: [
-                      Text('📦', style: TextStyle(fontSize: 20)),
-                      SizedBox(width: 12),
-                      Text(
-                        'Order History',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Row(
-                    children: [
-                      Text('🏛️', style: TextStyle(fontSize: 20)),
-                      SizedBox(width: 12),
-                      Text(
-                        'Campus',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Row(
-                    children: [
-                      Text('🔔', style: TextStyle(fontSize: 20)),
-                      SizedBox(width: 12),
-                      Text(
-                        'Notifications',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Row(
-                    children: [
-                      Text('⚙️', style: TextStyle(fontSize: 20)),
-                      SizedBox(width: 12),
-                      Text(
-                        'Settings',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                    ],
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsPage()));
+                  },
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Row(
+                      children: [
+                        Text('⚙️', style: TextStyle(fontSize: 20)),
+                        SizedBox(width: 12),
+                        Text(
+                          'Settings',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
